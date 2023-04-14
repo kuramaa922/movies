@@ -20,7 +20,8 @@
     "eject": "react-scripts eject",
     "lint": "eslint \"**/*.{js,jsx}\"",
     "lint:fix": "eslint \"**/*.{js,jsx}\" --fix --color",
-    "format": "prettier ./src --write"
+    "format": "prettier ./src --write",
+    "prepare": "husky install"
   },
   "eslintConfig": {
     "extends": [
@@ -53,5 +54,16 @@
     "husky": "^8.0.3",
     "lint-staged": "^13.2.1",
     "prettier": "^2.8.7"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.(js|jsx|ts|tsx)": [
+      "npm run lint:fix",
+      "npm run format"
+    ]
   }
 }
