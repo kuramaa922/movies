@@ -1,0 +1,27 @@
+.movielist {
+  /*margin: 0 auto;*/
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 35px;
+}
+
+.movielist__spin {
+  width: 100%;
+  margin: 30px;
+}
+
+.movielist__error {
+  margin: 0 auto;
+}
+
+.pagination {
+  margin: 18px auto;
+  display: flex;
+}
+
+@media all and (max-width: 994px){
+  .movielist {
+    justify-content: center;
+  }
+}
