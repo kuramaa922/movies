@@ -65,7 +65,12 @@ export default class MovieList extends React.Component {
               })
             )
           ) : (
-            <Alert className="movielist__error" type="error" message="Connection rejection" showIcon="true" />
+            <Alert
+              className="movielist__error"
+              type="error"
+              message="Check your internet connection or turn on VPN"
+              showIcon="true"
+            />
           )}
         </div>
         <div className="pagination">{pagination}</div>
