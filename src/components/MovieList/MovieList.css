@@ -20,7 +20,7 @@
   display: flex;
 }
 
-@media all and (max-width: 994px){
+@media all and (max-width: 994px) {
   .movielist {
     justify-content: center;
   }

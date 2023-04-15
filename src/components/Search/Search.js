@@ -17,7 +17,7 @@ export default class Search extends React.Component {
         <Input
           value={this.state.inputValue}
           className="search__input"
-          placeholder="Введите название фильма"
+          placeholder="Type to search a movie..."
           onChange={this.onChangeInput}
           autoFocus
           required
