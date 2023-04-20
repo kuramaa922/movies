@@ -1,191 +1,72 @@
 import React from 'react';
 import './App.css';
-import { debounce } from 'lodash';
+import { Alert } from 'antd';
 
 import MovieList from '../MovieList';
 import Header from '../Header';
 import Search from '../Search';
 import moviesApi from '../../services/moviesApi';
+import { GenresProvider } from '../GenresContext/GenresContext';
 
 export default class App extends React.Component {
   apiInstance = new moviesApi('7d1ef95b6c882e58c8cbc9d5640386a3');
 
   state = {
-    loading: null,
-    error: false,
-    moviesData: [],
-    moviesRateData: [],
-    result: false,
-    update: false,
-    page: 1,
-    pageNumber: 1,
-    pageVote: 1,
-    allPageVote: 1,
-    voteRes: 0,
+    genres: [],
     active: 'search',
-    value: '',
+    error: false,
+    searchQuery: '',
   };
 
   async componentDidMount() {
-    await this.apiInstance.createSession();
-    const data = await this.apiInstance.getRatedMovies();
+    try {
+      await this.apiInstance.createSession();
+      const data = await this.apiInstance.getGenres();
+      this.setState({ genres: data.genres });
+    } catch (err) {
+      return err;
+    }
+  }
 
-    this.setState(() => {
-      return {
-        moviesRateData: data.results,
-        allPageVote: data.total_pages,
-        pageVote: data.page,
-      };
+  componentDidCatch() {
+    this.setState({
+      error: true,
     });
   }
 
-  async componentDidUpdate() {
-    const { update } = this.state;
-
-    if (update) {
-      const data = await this.apiInstance.getRatedMovies();
-      this.setState(() => {
-        return {
-          moviesRateData: data.results,
-          update: false,
-        };
-      });
-    }
-    // console.log(this.state.moviesRateData);
-  }
-
-  searchDebounce = debounce(
-    (e) => {
-      this.onChangeInputSearch(e);
-    },
-    1000,
-    { maxWait: Infinity }
-  );
-
-  onError = () => {
+  search = (e) => {
     this.setState({
-      loading: false,
-      error: true,
+      searchQuery: e.target.value,
     });
   };
 
   onActive = (e) => {
-    this.setState({
-      active: e,
+    this.setState(() => {
+      return {
+        active: e,
+      };
     });
-  };
-
-  onChangeVote = (id, vote) => {
-    // console.log(this.state.moviesData);
-    this.apiInstance.postMoviesRate(vote, id).then((item) => {
-      if (item.success) {
-        this.setState({
-          update: true,
-        });
-      }
-    });
-  };
-
-  onChangeInputSearch = (e) => {
-    if (!e.target.value) {
-      this.setState({
-        moviesData: [],
-      });
-    }
-    if (e.target.value) {
-      this.setState(
-        {
-          loading: true,
-          error: false,
-          result: false,
-          page: 1,
-        },
-        () => {
-          this.apiInstance
-            .getMovieBySearch(e.target.value, this.state.page)
-            .then((item) => {
-              // console.log(item);
-              this.setState(() => {
-                const newData = [...item.results];
-                let res = null;
-                newData.length === 0 ? (res = true) : (res = false);
-                return {
-                  moviesData: newData,
-                  loading: false,
-                  result: res,
-                  pageNumber: item.total_pages,
-                };
-              });
-            })
-            .catch(this.onError);
-        }
-      );
-    }
-  };
-
-  changeStateValue = (value) => {
-    // console.log(value);
-    this.setState({
-      value: value,
-    });
-  };
-
-  changeStatePage = (value) => {
-    this.setState(
-      {
-        page: value,
-      },
-      () => {
-        if (value) {
-          this.setState(
-            {
-              result: false,
-              loading: true,
-              error: false,
-            },
-            () => {
-              this.apiInstance
-                .getMovieBySearch(this.state.value, this.state.page)
-                .then((item) => {
-                  this.setState(() => {
-                    const newData = [...item.results];
-                    let res = null;
-                    newData.length === 0 ? (res = true) : (res = false);
-                    return {
-                      moviesData: newData,
-                      result: res,
-                      loading: false,
-                      pageNumber: item.total_pages,
-                    };
-                  });
-                })
-                .catch(this.onError);
-            }
-          );
-        }
-      }
-    );
   };
 
   render() {
-    const { moviesData, moviesRateData, page, pageNumber, allPageVote, loading, error, active, result } = this.state;
+    const { genres, active, error, searchQuery } = this.state;
 
     return (
       <main className="container">
-        <Header setActive={this.onActive} active={active} />
-        {active === 'search' ? (
-          <Search changeStateValue={this.changeStateValue} searchDebounce={this.searchDebounce} active={active} />
-        ) : null}
-        <MovieList
-          moviesData={active === 'search' ? moviesData : moviesRateData}
-          page={page}
-          pageNumber={active === 'search' ? pageNumber : allPageVote}
-          result={result}
-          loading={loading}
-          error={error}
-          onChangeVote={this.onChangeVote}
-          changeStatePage={this.changeStatePage}
-        />
+        {!error ? (
+          <GenresProvider value={genres}>
+            <Header setActive={this.onActive} active={active} />
+            {active === 'search' ? <Search search={this.search} /> : null}
+            <MovieList searchQuery={searchQuery} active={active} />
+          </GenresProvider>
+        ) : (
+          <Alert
+            className="error-vpn"
+            type="error"
+            message="Please, check your internet connection or turn on VPN!"
+            showIcon="true"
+          />
+        )}
       </main>
     );
   }

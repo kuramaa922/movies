@@ -6,22 +6,18 @@ export default class Search extends React.Component {
     inputValue: '',
   };
 
-  onChangeInput = (event) => {
-    this.setState({ inputValue: event.target.value });
-    this.props.changeStateValue(event.target.value);
-    this.props.searchDebounce(event);
-  };
+  // onChangeInput = (event) => {
+  //   this.setState({ inputValue: event.target.value });
+  //   this.props.changeStateValue(event.target.value);
+  //   this.props.searchDebounce(event);
+  // };
   render() {
+    const { search } = this.props;
+
     return (
       <div className="search">
-        <Input
-          value={this.state.inputValue}
-          className="search__input"
-          placeholder="Type to search a movie..."
-          onChange={this.onChangeInput}
-          autoFocus
-          required
-        />
+        {/* eslint-disable-next-line prettier/prettier */}
+        <Input className="search__input" placeholder="Type to search a movie..." onChange={search} autoFocus required />
       </div>
     );
   }

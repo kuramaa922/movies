@@ -17,3 +17,8 @@ body {
   height: 100vh;
   padding: 0 10px;
 }
+
+.errorvpn {
+  margin: 160px auto;
+  width: 275px;
+}

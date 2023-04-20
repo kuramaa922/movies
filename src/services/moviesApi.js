@@ -6,57 +6,38 @@ export default class moviesApi {
   constructor(key) {
     this.apiKey = key;
     this.genres = null;
+    this.sessionId = '';
   }
 
   getImage = (imgPath) => (imgPath ? `${this._apiImage}${imgPath}` : `${this._noImage}`);
 
-  async getResource(request) {
+  getResource(request) {
     return new Promise((resolve, reject) => {
       fetch(`${this._apiBase}${request.url}?api_key=${this.apiKey}${request.query}${request.page}`)
         .then((result) => {
           if (!result.ok) {
             throw new Error(`${result.status}`);
           }
-
-          result
-            .json()
-            .then((json) => {
-              return this.imageLinkObject(json);
-            })
-            .then((json) => {
-              if (Object.prototype.hasOwnProperty.call(json, 'results')) {
-                this.getGenres()
-                  .then((genres) => {
-                    // here
-                    json.results.forEach((film) => {
-                      film.genre_ids = film.genre_ids.map((id) => ({
-                        id: id,
-                        name: genres.genres.find((genre) => genre.id === id).name,
-                      }));
-                    });
-                    // console.log(json);
-                    resolve(json);
-                  })
-                  .catch((err) => reject(err));
-              } else resolve(json);
-            });
+          result.json().then((json) => {
+            const data = this.imageLinkObject(json);
+            resolve(data);
+          });
         })
         .catch((err) => reject(err));
     });
   }
 
   imageLinkObject(result) {
-    const newData = JSON.parse(JSON.stringify(result));
-
+    const newDataJson = JSON.stringify(result);
+    const newData = JSON.parse(newDataJson);
     if (!Object.prototype.hasOwnProperty.call(newData, 'results')) {
       return { ...newData, poster_path: this.getImage(newData.poster_path) };
     }
-
-    const changedData = newData.results.map((item) => {
-      item.poster_path = this.getImage(item.poster_path);
-      return item;
+    const changeData = newData.results.map((data) => {
+      data.poster_path = this.getImage(data.poster_path);
+      return data;
     });
-    return { ...result, results: changedData };
+    return { ...result, results: changeData };
   }
 
   getMovieBySearch(query, page = 1) {
@@ -109,6 +90,9 @@ export default class moviesApi {
         localStorage.removeItem('guest_session_id');
         await this.createSession();
       }
+      if (!data.ok) {
+        throw new Error(`${data.status}`);
+      }
       return data.json();
     } catch (err) {
       return err;
@@ -117,44 +101,36 @@ export default class moviesApi {
 
   postMoviesRate(stars, id) {
     try {
+      this.sessionId = localStorage.getItem('guest_session_id');
       const path = `/movie/${id}/rating`;
       return this.postDataRate(path, stars);
-    } catch (error) {
-      return error;
+    } catch (err) {
+      return err;
     }
   }
 
-  async getResourceRatedMovies(path) {
+  async getResourceRatedMovies(path, page = 1) {
     try {
-      const data = await fetch(`${this._apiBase}${path}?api_key=${this.apiKey}`);
+      const data = await fetch(`${this._apiBase}${path}?api_key=${this.apiKey}&page=${page}`);
+      if (data.status === 401) {
+        localStorage.removeItem('guest_session_id');
+        await this.createSession();
+      }
       return data.json();
     } catch (error) {
       return error;
     }
   }
 
-  async getRatedMovies() {
-    this.sessionId = localStorage.getItem('guest_session_id');
-    const path = `/guest_session/${this.sessionId}/rated/movies`;
-    const data = await this.getResourceRatedMovies(path);
-    const newData = this.imageLinkObject(data);
+  async getRatedMovies(page = 1) {
+    // this.sessionId = localStorage.getItem('guest_session_id');
+    if (!this.sessionId) await this.createSession();
 
-    return new Promise((resolve, reject) => {
-      if (Object.prototype.hasOwnProperty.call(newData, 'results')) {
-        this.getGenres()
-          .then((genres) => {
-            // here
-            newData.results.forEach((film) => {
-              film.genre_ids = film.genre_ids.map((id) => ({
-                id: id,
-                name: genres.genres.find((genre) => genre.id === id).name,
-              }));
-            });
-            resolve(newData);
-          })
-          .catch((err) => reject(err));
-      } else resolve(newData);
-    });
+    const path = `/guest_session/${this.sessionId}/rated/movies`;
+    const data = await this.getResourceRatedMovies(path, page);
+    const newData = await this.imageLinkObject(data);
+
+    return newData;
   }
 
   async createSession() {
@@ -162,8 +138,9 @@ export default class moviesApi {
     return await this.getData(path)
       .then((data) => {
         if (localStorage.getItem('guest_session_id')) {
-          this.sessionId = localStorage.getItem('guest_session_id');
-          return localStorage.getItem('guest_session_id');
+          // this.sessionId = localStorage.getItem('guest_session_id');
+          // return localStorage.getItem('guest_session_id');
+          return (this.sessionId = localStorage.getItem('guest_session_id'));
         }
         this.sessionId = data.guest_session_id;
         localStorage.setItem('guest_session_id', data.guest_session_id);
